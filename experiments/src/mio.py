@@ -126,13 +126,9 @@ def mio(iteration, datafname,q, lqs_beta, m_normal, dep_var, formulation, resloc
     # Update dimensions to reflect the new intercept column
     m, n = X.shape
 
-    # Set up the MIP
-    #
     # Set up the callback for calculating the primal integral
-
     time_history = [0.0]
     obj_history = [float('inf')]
-
     def pi_callback(model, where):
         # 4 corresponds to GRB.Callback.MIPSOL
         if where == GRB.Callback.MIPSOL:
@@ -141,6 +137,9 @@ def mio(iteration, datafname,q, lqs_beta, m_normal, dep_var, formulation, resloc
             obj = model.cbGet(GRB.Callback.MIPSOL_OBJ)
             time_history.append(runtime)
             obj_history.append(obj)
+
+
+    # Set up the MIP
     bm_formulations = {
        "alg3-mio-bm",
        "lqs-mio-bm",
@@ -148,6 +147,7 @@ def mio(iteration, datafname,q, lqs_beta, m_normal, dep_var, formulation, resloc
        "cbq-mio-bm",
        "mio-bm"
     }
+
     model = gp.Model("mio")
     model.ModelSense = GRB.MINIMIZE
 
@@ -461,12 +461,12 @@ elif formulation in ["alg3-mio1", "lqs-mio1", "cbq-mio1"]: # MIO1
             eplus[i].Start = -dist[i,0]
             eminus[i].Start = 0.0
         z[i].Start = 0.0
-        rel[i].Start = absdist[i,0]
+        r[i].Start = absdist[i,0]
      
     for i in range(q):
         row_idx = int(sortedabsdist[i,0])
         z[row_idx].Start = 1.0
-        rel[row_idx].Start = 0.0
+        r[row_idx].Start = 0.0
     for j in range(n):
         beta[j].Start = beta_start[j,0]
     # Warm start values assigned.
@@ -548,6 +548,7 @@ if timelimit >= 0.0:
                 rplus[i].Start = 0.0
             else:
                 rplus[i].Start = -dist[i,0]
+                rminus[i].Start = 0.0
             if absdist[i,0] - newGamma > 0.0:
                 mubar[i].Start = absdist[i,0] - newGamma
                 mu[i].Start = 0.0
@@ -560,13 +561,67 @@ if timelimit >= 0.0:
             z[row_idx].Start = 1.0
         for j in range(n):
             beta[j].Start = beta_star[j,0]
-    elif
-    # line 376
+    else: # MIO1
+        dist = X @ beta_star
+        absdist = np.abs(dist)
+        indices = np.arange(m).reshame(-1,1)
+        sortedabsdist = np.hstack([indices, absdist])
+        sortedabsdist = sortedabsdist[sortedabsdist[:,1].argsort()]
+        newGamma = sortedabsdist[q-1,1]
+        gamma.Start = newGamma
+        print(f"Gamma recalculated from beta_start is {newGamma}")
+        for i in range(m):
+            if dist[i,0] > 0:
+                eminus[i].Start = dist[i,0]
+                eplus[i].Start = 0.0
+            else:
+                eplus[i].Start = -dist[i,0]
+                eminus[i].Start = 0.0
+            z[i].Start = 0.0
+            r[i].Start = absdist[i,0]
+        for i in range(q):
+            row_idx  int(sortedabsdist[i,0])
+            z[row_idx].Start = 1.0
+            r[row_idx].Start = 0.0
+        for j in range(n):
+            beta[j].Start = beta_star[j,0]
 
 
+out_fname = f"{resloc}/{formulation}i{iteration}.csv"
+print(out_fname)
+out_file = open(out_fname, "w")
+if not (formulation == "mio-bm-first" or formulaton == "mio1-first"):
+    output_runtime = model.Runtime
+end
 
+print("beta_star", beta_star)
+print("gamma", newGamma)
 
+#  a result datafile is created containing the data file with full 
+#   path, iteration number, number of rows, number of variables, 
+#   number of non-outliers, q, formulation, total squared error, 
+#   MIP runtime, MIP status, gamma, best MIP bound, number of outliers
+#   identified as one of the q smallest by best MIP feasible solution,
+#   trimmed squared error (TSE) for the q smallest residuals, TSE for 
+#   m_normal residuals after 1 hour, time limit used for the solver,
+#   gamma obtained by using the beta from the warm start, TSE for 
+#   m_normal residuals for warm start, gamma obtained after MIO
+#   TSE of MIO, 
+status_string = str(model.Status)
+obj_bound = model.ObjBound if hasattr(model, "ObjBound") else float ('-inf')
 
+out_file.write(
+    f"{datafname},{iteration},{m},{n - 1},{m_normal},{q},{formulation},"
+    f"{tot_err:.6f},{output_runtime:.6f},{status_string},{f_beta_star:.6f},"
+    f"{obj_bound:.6f},{num_outliers_in_q},{tse:.6f},{timelimit:.6f},"
+    f"{newGammaHeur:.6f},{tsestarHeur:.6f},{newGamma:.6f},{tsestar:.6f}\n"
+)
+
+out_file.close()
+
+pi_fname = f"{resloc}/{formulation}pi_i{iteration}.csv"
+pi_data = np.column_stack((time_history, obj_history))
+np.savetxt(pi_fname, pi_data, delimiter=",", fmt="%.6f")
 
 return beta_star, f_beta_star
 

@@ -108,6 +108,7 @@ run_mio <- function(dataloc, srcloc, fname, q, dep_var, formulation, timelimit, 
   m <- as.numeric(my_regmatch[[1]][2])
   n <- as.numeric(my_regmatch[[1]][3])
   i <- as.numeric(my_regmatch[[1]][4])
+  cat(fname)
   cat("\n", i, "\n")
   X <- read.csv(paste(dataloc,"/",fname,sep=""), header=FALSE) # read data
 
@@ -149,6 +150,7 @@ run_mio <- function(dataloc, srcloc, fname, q, dep_var, formulation, timelimit, 
   if (class(q) == "numeric") {
     q <- floor(q*nrow(X)) # Convert q from percentile to order statistic for MATLAB implementations
   }
+  # check reticulate for calling Python
   make_lqs_beta <- rmat_to_matlab_mat(lqs_beta, matname="lqs_beta") # create the warm start from LQS
   #add_path <- paste("addpath('", srcloc, "');", sep="") 
   add_path <- paste("addpath('", srcloc, "','", mosekloc, "','", gurobiloc,"');", sep="") # add the path to the MATLAB files and MOSEK
