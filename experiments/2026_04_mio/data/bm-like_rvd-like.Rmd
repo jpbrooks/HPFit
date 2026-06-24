@@ -1,0 +1,126 @@
+---
+title: "Bertsimas and Mazumder"
+output: html_document
+---
+
+To run,
+
+Rscript -e "rmarkdown::render('fname.Rmd')"
+
+
+Generate example with no outliers and smaller standard deviation on data and errors.
+```{r}
+gen_sample_test <- function(m,n,i) {
+  X <- matrix(rnorm(m*(n-1), sd=1),
+              ncol=n-1)
+  eps <- rnorm(m, sd=0.1)
+  beta <- rep(1, n-1)
+  y <- X %*% beta + eps - 1.0
+  my_data <- data.frame(y, X)
+  write.table(my_data, file=paste("rvd-like/m",
+                                m-length(outliers),
+                                "n",n, 
+                                "m_outliers", length(outliers), 
+                                "i", i, 
+                                ".csv",
+                                sep=""),
+            quote=FALSE,
+            row.names=FALSE,
+            col.names=FALSE,
+            sep=","
+  )
+}
+```
+
+
+
+Based on Rousseeuw and Driessen (2006).
+```{r}
+gen_sample_rvd <- function(m,n,my_pi,i) {
+  X <- matrix(rnorm(m*(n-1), sd=10),
+              ncol=n-1)
+  eps <- rnorm(m, sd=1)
+  beta <- rep(1, n-1)
+  y <- X %*% beta + eps - 1.0
+  outliers <- sample(1:m, size=floor(my_pi*m))
+  X[outliers,1] <- X[outliers,1] + rnorm(length(outliers), mean=100,sd=10)
+  X <- rbind(X[-outliers,], X[outliers,])
+  y <- c(y[-outliers], y[outliers])
+  my_data <- data.frame(y, X)
+  write.table(my_data, file=paste("rvd-like/m",
+                                m-length(outliers),
+                                "n",n, 
+                                "m_outliers", length(outliers), 
+                                "i", i, 
+                                ".csv",
+                                sep=""),
+            quote=FALSE,
+            row.names=FALSE,
+            col.names=FALSE,
+            sep=","
+  )
+}
+```
+
+
+
+Bertsimas and Mazumder (2014)
+
+```{r}
+gen_sample <- function(m,n,my_pi,type, i) {
+  X <- matrix(rnorm(m*n, sd=100),
+              ncol=n)
+  eps <- rnorm(m, sd=10)
+  beta <- rep(1, n)
+  y <- X %*% beta + eps
+  outliers <- sample(1:m, size=floor(my_pi*m))
+  if (type == "A") {
+    X[outliers,1] <- X[outliers,1] + 1000
+  } else if (type == "B") {
+    x_outliers <- outliers[1:floor(length(outliers)/2)]
+    y_outliers <- outliers[(floor(length(outliers)/2)+1):length(outliers)]
+    X[x_outliers,1] <- X[x_outliers,1] + 1000
+    y[y_outliers] <- y[y_outliers] + 1000
+  }
+  X <- rbind(X[-outliers,], X[outliers,])
+  y <- c(y[-outliers], y[outliers])
+  my_data <- data.frame(y, X)
+  write.table(my_data, file=paste("bm-like/m",
+                                m-length(outliers),
+                                "n",n+1, 
+                                "m_outliers", length(outliers), 
+                                "i", i, 
+                                ".csv",
+                                sep=""),
+            quote=FALSE,
+            row.names=FALSE,
+            col.names=FALSE,
+            sep=","
+  )
+}
+```
+
+
+
+```{r}
+set.seed(12345)
+for (i in 0:9) {
+    for (outFrac in c(.1,.2,.3,.4)) {
+        gen_sample(101, 5, outFrac, "B", i) # Ex-1
+        gen_sample(101, 10, outFrac, "B", i) # Ex-1
+    }
+}
+```
+
+
+```{r}
+for (i in 0:9) {
+    for (m in c(201,501,2001,5001,10001)) {
+        gen_sample(m, 10, 0.2, "B", i) # Ex-1
+    }
+}
+```
+
+
+
+
