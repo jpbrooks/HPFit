@@ -38,7 +38,7 @@ def get_pcahp(data_set):
         s_minus = model.addVars(m, lb=0.0, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name="s_minus")
         
         # Set up objective function: Minimize sum(s_plus) + sum(s_minus)
-        obj_expr = s_plus.sum() + s_minus.sum()
+        obj_expr = sum(s_plus[i] + s_minus[i] for i in range(m))
         model.setObjective(obj_expr, GRB.MINIMIZE)
         
         # Build constraints: dataSet * w + s_plus - s_minus = n

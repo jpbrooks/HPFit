@@ -102,7 +102,8 @@ fit_lqs <- function(j, X, m, n, q) {
 }
 
   
-run_mio <- function(dataloc, srcloc, fname, q, dep_var, formulation, timelimit, resloc, calc_lqs_beta, mosekloc, gurobiloc) {
+run_mio <- function(dataloc, srcloc, fname, q, dep_var, formulation, 
+		    timelimit, resloc, calc_lqs_beta, mosekloc, gurobiloc) {
   my_regexec <- regexec("m([0-9]+)n([0-9]+).+i([0-9]+).+csv", fname) # get m, n, i from the dataset name
   my_regmatch <- regmatches(fname, my_regexec)
   m <- as.numeric(my_regmatch[[1]][2])
@@ -151,22 +152,20 @@ run_mio <- function(dataloc, srcloc, fname, q, dep_var, formulation, timelimit, 
     q <- floor(q*nrow(X)) # Convert q from percentile to order statistic for MATLAB implementations
   }
   # check reticulate for calling Python
-  make_lqs_beta <- rmat_to_matlab_mat(lqs_beta, matname="lqs_beta") # create the warm start from LQS
-  #add_path <- paste("addpath('", srcloc, "');", sep="") 
-  add_path <- paste("addpath('", srcloc, "','", mosekloc, "','", gurobiloc,"');", sep="") # add the path to the MATLAB files and MOSEK
-  if (formulation == "alg3-mio-bm" | formulation == "alg3-mio1" | formulation == "lqs-mio-bm" | formulation == "lqs-mio1" | formulation == "mio-bm" | formulation == "mio1" | formulation == "mio1-first" | formulation == "mio-bm-first") { # use the lqs solution from above or mio.m will call algorithm3.  The time used for lqs is subtracted from the time limit specified.
-    if (dep_var == TRUE) { # first variable is response 
-      print(paste(add_path, " ", make_lqs_beta, " ", "mio(", i, ",'",dataloc, "/", fname,"',",q,",lqs_beta,", m, ",true,'", formulation, "','", resloc, "',", timelimit-lqs_time[3], ")", sep="")) 
-      run_matlab_code(paste(add_path, " ", make_lqs_beta, " ", "mio(", i, ",'",dataloc, "/", fname,"',",q,",lqs_beta,", m, ",true,'", formulation, "','", resloc, "',", timelimit-lqs_time[3], ")", sep="")) # dep_var = TRUE
-    } else {
-      run_matlab_code(paste(add_path, " ", make_lqs_beta, " ", "mio(", i, ",'",dataloc, "/", fname,"',",q,",lqs_beta,", m, ",false,'", formulation, "','", resloc, "',", timelimit-lqs_time[3], ")", sep="")) # dep_var = FALSE
-    }
-  } else if (formulation == "cbq-mio1" | formulation == "cbq-mio-bm") { # call run_cbqmio() in run_cbqmio.m
-    if (dep_var == TRUE) {
-      run_matlab_code(paste(add_path, " ", make_lqs_beta, " ", "run_cbqmio(", i, ",'",dataloc, "/", fname,"',",q,",", m, ",true,'", formulation, "','", resloc, "',", timelimit, ")", sep="")) # dep_var = TRUE
-    } else{
-      run_matlab_code(paste(add_path, " ", make_lqs_beta, " ", "run_cbqmio(", i, ",'",dataloc, "/", fname,"',",q,",", m, ",false,'", formulation, "','", resloc, "',", timelimit, ")", sep="")) # dep_var = FALSE
-    }
+  source_python(paste(srcloc, "/mio.py", sep="")
+  source_python(paste(srcloc, "/run_cbqmio.py", sep="")
+
+  if (formulation == "alg3-mio-bm" | formulation == "alg3-mio1" | 
+      formulation == "lqs-mio-bm" | formulation == "lqs-mio1" | 
+      formulation == "mio-bm" | formulation == "mio1" | 
+      formulation == "mio1-first" | formulation == "mio-bm-first") { 
+  # use the lqs solution from above or mio.m will call algorithm3.  The time used for lqs is subtracted from the time limit specified.
+    mio(i, paste(dataloc, "/", fname, sep=""), q, lqs_beta, dep_var, 
+	formulation, resloc, timelimit-lqs_time[3]) 
+  } else if (formulation == "cbq-mio1" | formulation == "cbq-mio-bm") { 
+# call run_cbqmio() in run_cbqmio.m
+    run_cbqmio(i, paste(dataloc, "/", fname, sep=""), q, m, dep_var, 
+	       formulation, resloc, timelimit)
   }
 }
 

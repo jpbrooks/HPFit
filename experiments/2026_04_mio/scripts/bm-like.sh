@@ -37,11 +37,12 @@ ID=$SLURM_ARRAY_TASK_ID
 
 SEED=$(sed -n -e "$ID p" $SEEDFILE)
 echo "library(MASS)" > $RESLOC/hyper.$ID.in
-echo "library(matlabr)" >> $RESLOC/hyper.$ID.in
-echo "options(matlab.path='/opt/matlab2024a/bin')" >> $RESLOC/hyper.$ID.in
+echo "library(reticulate)" >> $RESLOC/hyper.$ID.in
 echo "source(\"$SRCLOC/run_mio.R\")" >> $RESLOC/hyper.$ID.in
+echo "source_python(\"$SRCLOC/mio.py\")" >> $RESLOC/hyper.$ID.in
+echo "source_python(\"$SRCLOC/run_cbqmio.py\")" >> $RESLOC/hyper.$ID.in
 echo "set.seed(12345)" >> $RESLOC/hyper.$ID.in
-echo "run_mio(\"$DATALOC\", \"$SRCLOC\", \"$SEED\", $Q, $DEP_VAR, \"mio1\",        $TIMELIMIT, \"$RESLOC\", FALSE, \"$MOSEKLOC\", \"$GUROBILOC\")" >> $RESLOC/hyper.$ID.in
+echo "run_mio(\"$DATALOC\", \"$SRCLOC\", \"$SEED\", $Q, $DEP_VAR, \"mio1\", $TIMELIMIT, \"$RESLOC\", FALSE, \"$MOSEKLOC\", \"$GUROBILOC\")" >> $RESLOC/hyper.$ID.in
 #echo "set.seed(12345)" >> $RESLOC/hyper.$ID.in
 #echo "run_mio(\"$DATALOC\", \"$SRCLOC\", \"$SEED\", $Q, $DEP_VAR, \"mio-bm\",      $TIMELIMIT, \"$RESLOC\", FALSE, \"$MOSEKLOC\", \"$GUROBILOC\")" >> $RESLOC/hyper.$ID.in
 #echo "set.seed(12345)" >> $RESLOC/hyper.$ID.in

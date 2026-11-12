@@ -75,7 +75,7 @@
 # - options mentioned above
 # - iteration: iteration number.  Used in the output filename.
 # - datafname: full path to data file.
-# - lqs_beta: an initial solution generated using LQS or CBq as implemented
+# - init_beta: an initial solution generated using LQS or CBq as implemented
 #             in R or CBq.  Only used for lqs-mio-bm, lqs-mio1, cbq-mio1,
 #             cbq-mio-bm.
 # - m_normal: number of non-outlier rows of data.  After that they are
@@ -104,7 +104,7 @@ import numpy as np
 import pandas as pd
 from algorithm3 import algorithm3
 
-def mio(iteration, datafname,q, lqs_beta, m_normal, dep_var, formulation, resloc, timelimit):
+def mio(iteration, datafname,q, init_beta, m_normal, dep_var, formulation, resloc, timelimit):
 
     X_df = pd.read_csv(datafname)  # Use pd.read_excel if reading .xlsx
     X = X_df.to_numpy()  # Extract raw data from the dataframe
@@ -372,7 +372,7 @@ if formulation in ["alg3-mio-bm", "alg3-mio1"]:
 
 
 if formulation in ["lqs-mio-bm", "lqs-mio1", "cbq-mio1", "cbq-mio-bm"]:
-    beta_start = lqs_beta  # Assign the warmstart vector
+    beta_start = init_beta  # Assign the warmstart vector
 
 import numpy as np
 
